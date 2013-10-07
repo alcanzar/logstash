@@ -152,6 +152,12 @@ en:
         verbose: |+
           More verbose logging. This causes 'info' 
           level logs to be emitted.
-        debug: |+
+        debug: |+ 
           Most verbose logging. This causes 'debug'
           level logs to be emitted.
+        es_server: |+
+          Set the server address for the elasticsearch
+          server to use for logstash instnace management.
+          Multiple hosts can be set if comma delimited.
+          If -f and -e are not set this defaults to 
+          'localhost:9200'

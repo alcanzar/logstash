@@ -1,5 +1,6 @@
 require "clamp" # gem 'clamp'
 require "logstash/errors"
+require "logstash/management"
 require "i18n"
 
 class LogStash::Agent < Clamp::Command
@@ -43,6 +44,14 @@ class LogStash::Agent < Clamp::Command
   option ["-t", "--configtest"], :flag,
     I18n.t("logstash.agent.flag.configtest"),
     :attribute_name => :config_test
+    
+  option ["-s", "--es_server"], "ES_SERVER",
+    I18n.t("logstash.agent.flag.es_server"),
+    :attribute_name => :es_server, :default => "localhost:9200"
+    
+  option ["-m", "--managment_port"], "MANAGEMENT_PORT",
+    I18n.t("logstash.agent.flag.management_port"),
+    :attribute_name => :management_port, :default => 9100 
 
   # Emit a warning message.
   def warn(message)
@@ -85,24 +94,23 @@ class LogStash::Agent < Clamp::Command
 
     # You must specify a config_string or config_path
     if config_string.nil? && config_path.nil?
-      fail(help + "\n", I18n.t("logstash.agent.missing-configuration"))
-    end
-
-    if @config_path
-      @config_string = load_config(@config_path)
+      @config_string = config_from_es(es_server)
     else
-      # include a default stdin input if no inputs given
-      if @config_string !~ /input *{/
-        @config_string += "input { stdin { type => stdin } }"
-      end
-      # include a default stdout output if no outputs given
-      if @config_string !~ /output *{/
-        @config_string += "output { stdout { codec => rubydebug } }"
+      if @config_path
+        @config_string = load_config(@config_path)
+      else
+        # include a default stdin input if no inputs given
+        if @config_string !~ /input *{/
+          @config_string += "input { stdin { type => stdin } }"
+        end
+        # include a default stdout output if no outputs given
+        if @config_string !~ /output *{/
+          @config_string += "output { stdout { codec => rubydebug } }"
+        end
       end
     end
-
     begin
-      pipeline = LogStash::Pipeline.new(@config_string)
+      @pipeline = LogStash::Pipeline.new(@config_string)
     rescue LoadError => e
       fail("Configuration problem.")
     end
@@ -124,12 +132,14 @@ class LogStash::Agent < Clamp::Command
       configure_logging(log_file)
     end
 
-    pipeline.configure("filter-workers", filter_workers)
+    LogStash::Management.manage_agent(self)
+
+    @pipeline.configure("filter-workers", filter_workers)
 
     @logger.unsubscribe(stdout_logs) if show_startup_errors
 
     # TODO(sissel): Get pipeline completion status.
-    pipeline.run
+    @pipeline.run
     return 0
   rescue LogStash::ConfigurationError => e
     @logger.unsubscribe(stdout_logs) if show_startup_errors
@@ -144,6 +154,15 @@ class LogStash::Agent < Clamp::Command
     @log_fd.close if @log_fd
     Stud::untrap("INT", trap_id) unless trap_id.nil?
   end # def execute
+  
+  # Pull configuration from elasticsearch
+  def config_from_es(server)
+    require 'elasticsearch'
+    
+    client = Elasticsearch::Client.new(hosts: server.split(','))
+    config = client.get index: 'logstash', type: 'config', id: 'default'
+    return config["_source"]["config"]
+  end # config_from_es
 
   def show_version
     show_version_logstash
@@ -196,6 +215,13 @@ class LogStash::Agent < Clamp::Command
     end
   end # def show_gems
 
+  def reload(config_string)
+    @pipeline.shutdown
+    @pipeline = LogStash::Pipeline.new(config_string)
+    @pipeline.configure("filter-workers", filter_workers)
+    @pipeline.run
+  end
+  
   # Do any start-time configuration.
   #
   # Log file stuff, plugin path checking, etc.
