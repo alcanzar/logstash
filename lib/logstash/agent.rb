@@ -47,10 +47,6 @@ class LogStash::Agent < Clamp::Command
   option ["-s", "--es_server"], "ES_SERVER",
     I18n.t("logstash.agent.flag.es_server"),
     :attribute_name => :es_server, :default => "localhost:9200"
-    
-  option ["-m", "--managment_port"], "MANAGEMENT_PORT",
-    I18n.t("logstash.agent.flag.management_port"),
-    :attribute_name => :management_port, :default => 9100 
 
   # Emit a warning message.
   def warn(message)
