@@ -12,4 +12,5 @@ module LogStash
   module PluginMixins; end
 
   SHUTDOWN = :shutdown
+  RESTART = :restart
 end # module LogStash

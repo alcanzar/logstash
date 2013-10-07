@@ -7,10 +7,18 @@ require "logstash/outputs/base"
 require "logstash/errors"
 
 class LogStash::Pipeline
+  attr_accessor :config_string
+  
   def initialize(configstr)
     @logger = Cabin::Channel.get(LogStash)
+    @reload = false;
+    @config_string = configstr
+    setup
+  end # def initialize
+  
+  def setup
     grammar = LogStashConfigParser.new
-    @config = grammar.parse(configstr)
+    @config = grammar.parse(@config_string)
     if @config.nil?
       raise LogStash::ConfigurationError, grammar.failure_reason
     end
@@ -39,7 +47,8 @@ class LogStash::Pipeline
     @settings = {
       "filter-workers" => 1,
     }
-  end # def initialize
+  end
+    
 
   def ready?
     return @ready
@@ -58,8 +67,18 @@ class LogStash::Pipeline
   end
 
   def run
+    begin
+      _run
+      setup
+    end while @reload
+    # exit code
+    return 0
+  end # def run
+  
+  def _run
     @started = true
     @input_threads = []
+    @reload = false
     start_inputs
     start_filters if filters?
     start_outputs
@@ -78,13 +97,11 @@ class LogStash::Pipeline
     wait_outputs
 
     @logger.info("Pipeline shutdown complete.")
-
-    # exit code
-    return 0
-  end # def run
+  end
 
   def wait_inputs
     @input_threads.each(&:join)
+    shutdown if @reload
   rescue Interrupt
     # rbx does weird things during do SIGINT that I haven't debugged
     # so we catch Interrupt here and signal a shutdown. For some reason the
@@ -169,7 +186,10 @@ class LogStash::Pipeline
   rescue LogStash::ShutdownSignal
     # nothing
   ensure
-    plugin.teardown
+    begin
+      plugin.teardown
+    rescue LogStash::ShutdownSignal
+    end
   end # def inputworker
 
   def filterworker
@@ -231,14 +251,24 @@ class LogStash::Pipeline
       # Sometimes an input is stuck in a blocking I/O
       # so we need to tell it to teardown directly
       @inputs.each do |input|
-        input.teardown
+        begin
+          input.teardown
+        rescue LogStash::ShutdownSignal => e
+        end
       end
     end
-
+    
     # No need to send the ShutdownSignal to the filters/outputs nor to wait for
     # the inputs to finish, because in the #run method we wait for that anyway.
   end # def shutdown
-
+  
+  def reload(config_string)
+    @reload = true;
+    @ready = false;
+    @config_string = config_string
+    shutdown
+  end
+  
   def plugin(plugin_type, name, *args)
     args << {} if args.empty?
     klass = LogStash::Plugin.lookup(plugin_type, name)

@@ -224,7 +224,7 @@ class LogStash::Inputs::Tcp < LogStash::Inputs::Base
   def teardown
     if server?
       @interrupted = true
-      @thread.raise(LogStash::ShutdownSignal)
+      raise(LogStash::ShutdownSignal)
     end
   end # def teardown
 end # class LogStash::Inputs::Tcp
