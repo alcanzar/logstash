@@ -72,7 +72,8 @@ class LogStash::Agent < Clamp::Command
     require "cabin" # gem 'cabin'
     require "logstash/plugin"
     @logger = Cabin::Channel.get(LogStash)
-
+    @reloading = false
+    
     if version?
       show_version
       return 0
@@ -109,8 +110,10 @@ class LogStash::Agent < Clamp::Command
 
     Stud::trap("HUP") do
       @logger.info(I18n.t("logstash.agent.sighup"))
+      @reloading = true
       configure_logging(log_file)
       reload
+      @reloading = false
     end
 
     @pipeline.configure("filter-workers", filter_workers)
@@ -266,7 +269,7 @@ class LogStash::Agent < Clamp::Command
       @logger.unsubscribe(@logger_subscription) if @logger_subscription
       @logger_subscription = @logger.subscribe(@log_fd)
     else
-      @logger.subscribe(STDOUT)
+      @logger.subscribe(STDOUT) unless @reloading
     end
 
     # TODO(sissel): redirect stdout/stderr to the log as well
