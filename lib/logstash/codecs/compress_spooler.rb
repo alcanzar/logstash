@@ -35,8 +35,9 @@ class LogStash::Codecs::CompressSpooler < LogStash::Codecs::Base
       z.close
       @buffer.clear
     else
-      data["@timestamp"] = data["@timestamp"].to_f
-      @buffer << data.to_hash
+      obj = data.to_hash.clone
+      obj["@timestamp"] = obj["@timestamp"].to_f
+      @buffer << obj
     end
   end # def encode
 
