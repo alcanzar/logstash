@@ -1,7 +1,7 @@
 # encoding: utf-8
 require "logstash/codecs/base"
 require "logstash/codecs/line"
-require "json"
+require "logstash/timestamp"
 
 # This codec will encode and decode Graphite formated lines.
 class LogStash::Codecs::Graphite < LogStash::Codecs::Base
@@ -52,7 +52,7 @@ class LogStash::Codecs::Graphite < LogStash::Codecs::Base
   def decode(data)
     @lines.decode(data) do |event|
       name, value, time = event["message"].split(" ")
-      yield LogStash::Event.new(name => value.to_f, "@timestamp" => Time.at(time.to_i).gmtime)
+      yield LogStash::Event.new(name => value.to_f, "@timestamp" => LogStash::Timestamp.at(time.to_i).gmtime)
     end # @lines.decode
   end # def decode
 

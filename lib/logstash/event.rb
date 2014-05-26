@@ -1,23 +1,11 @@
 # encoding: utf-8
-require "json"
 require "time"
 require "date"
 require "logstash/namespace"
 require "logstash/util/fieldreference"
 require "logstash/util/accessors"
-require "logstash/time_addon"
-
-# Use a custom serialization for jsonifying Time objects.
-# TODO(sissel): Put this in a separate file.
-class Time
-  def to_json(*args)
-    return iso8601(3).to_json(*args)
-  end
-
-  def inspect
-    return to_json
-  end
-end
+require "logstash/timestamp"
+require "logstash/json"
 
 # the logstash event object.
 #
@@ -60,10 +48,10 @@ class LogStash::Event
     if data.include?(TIMESTAMP)
       t = data[TIMESTAMP]
       if t.is_a?(String)
-        data[TIMESTAMP] = LogStash::Time.parse_iso8601(t)
+        data[TIMESTAMP] = LogStash::Timestamp.parse_iso8601(t)
       end
     else
-      data[TIMESTAMP] = ::Time.now.utc
+      data[TIMESTAMP] = LogStash::Timestamp.now
     end
   end # def initialize
 
@@ -132,8 +120,8 @@ class LogStash::Event
   # keep []= implementation in sync with spec/test_utils.rb monkey patch
   # which redefines []= but using @accessors.strict_set
   def []=(str, value)
-    if str == TIMESTAMP && !value.is_a?(Time)
-      raise TypeError, "The field '@timestamp' must be a Time, not a #{value.class} (#{value})"
+    if str == TIMESTAMP && !value.is_a?(LogStash::Timestamp)
+      raise TypeError, "The field '@timestamp' must be a (LogStash::Timestamp, not a #{value.class} (#{value})"
     end
     @accessors.set(str, value)
   end # def []=
@@ -144,8 +132,8 @@ class LogStash::Event
   end
 
   public
-  def to_json(*args)
-    return @data.to_json(*args)
+  def to_json
+    LogStash::Json.dump(@data)
   end # def to_json
 
   def to_hash
@@ -161,7 +149,7 @@ class LogStash::Event
 
     #convert timestamp if it is a String
     if @data[TIMESTAMP].is_a?(String)
-      @data[TIMESTAMP] = LogStash::Time.parse_iso8601(@data[TIMESTAMP])
+      @data[TIMESTAMP] = LogStash::Timestamp.parse_iso8601(@data[TIMESTAMP])
     end
   end
 
@@ -238,7 +226,7 @@ class LogStash::Event
           when Array
             value.join(",") # Join by ',' if value is an array
           when Hash
-            value.to_json # Convert hashes to json
+            LogStash::Json.dump(value) # Convert hashes to json
           else
             value # otherwise return the value
         end # case value

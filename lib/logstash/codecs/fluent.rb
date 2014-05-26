@@ -1,6 +1,7 @@
 # encoding: utf-8
 require "logstash/codecs/base"
 require "logstash/util/charset"
+require "logstash/timestamp"
 
 # This codec handles fluentd's msgpack schema.
 #
@@ -38,7 +39,7 @@ class LogStash::Codecs::Fluent < LogStash::Codecs::Base
     @decoder.feed(data)
     @decoder.each do |tag, epochtime, map|
       event = LogStash::Event.new(map.merge(
-        "@timestamp" => Time.at(epochtime),
+        "@timestamp" => LogStash::Timestamp.at(epochtime),
         "tags" => tag
       ))
       yield event

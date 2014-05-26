@@ -1,5 +1,6 @@
 # encoding: utf-8
 require "logstash/codecs/base"
+require "logstash/timestamp"
 
 class LogStash::Codecs::Msgpack < LogStash::Codecs::Base
   config_name "msgpack"
@@ -18,7 +19,7 @@ class LogStash::Codecs::Msgpack < LogStash::Codecs::Base
     begin
       # Msgpack does not care about UTF-8
       event = LogStash::Event.new(MessagePack.unpack(data))
-      event["@timestamp"] = Time.at(event["@timestamp"]).utc if event["@timestamp"].is_a? Float
+      event["@timestamp"] = LogStash::Timestamp.at(event["@timestamp"]).utc if event["@timestamp"].is_a? Float
       event["tags"] ||= []
       if @format
         event["message"] ||= event.sprintf(@format)

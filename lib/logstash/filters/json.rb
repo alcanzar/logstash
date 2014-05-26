@@ -1,10 +1,12 @@
 # encoding: utf-8
 require "logstash/filters/base"
 require "logstash/namespace"
+require "logstash/json"
+require "logstash/timestamp"
 
 # This is a JSON parsing filter. It takes an existing field which contains JSON and
 # expands it into an actual data structure within the Logstash event.
-# 
+#
 # By default it will place the parsed JSON in the root (top level) of the Logstash event, but this
 # filter can be configured to place the JSON into any arbitrary event field, using the
 # `target` configuration.
@@ -75,10 +77,10 @@ class LogStash::Filters::Json < LogStash::Filters::Base
 
     begin
       # TODO(sissel): Note, this will not successfully handle json lists
-      # like your text is '[ 1,2,3 ]' JSON.parse gives you an array (correctly)
+      # like your text is '[ 1,2,3 ]' json parser gives you an array (correctly)
       # which won't merge into a hash. If someone needs this, we can fix it
       # later.
-      dest.merge!(JSON.parse(source))
+      dest.merge!(LogStash::Json.load(source))
 
       # If no target, we target the root of the event object. This can allow
       # you to overwrite @timestamp. If so, let's parse it as a timestamp!
@@ -86,7 +88,7 @@ class LogStash::Filters::Json < LogStash::Filters::Base
         # This is a hack to help folks who are mucking with @timestamp during
         # their json filter. You aren't supposed to do anything with
         # "@timestamp" outside of the date filter, but nobody listens... ;)
-        event[TIMESTAMP] = Time.parse(event[TIMESTAMP]).utc
+        event[TIMESTAMP] = LogStash::Timestamp.parse(event[TIMESTAMP]).utc
       end
 
       filter_matched(event)
