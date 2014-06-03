@@ -14,15 +14,20 @@ class LogStash::Codecs::EDN < LogStash::Codecs::Base
   def decode(data)
     begin
       yield LogStash::Event.new(EDN.read(data))
-    rescue
-      @logger.info("EDN parse failure. Falling back to plain-text", :error => e, :data => data)
+    rescue => e
+      @logger.warn("EDN parse failure. Falling back to plain-text", :error => e, :data => data)
       yield LogStash::Event.new("message" => data)
     end
   end
 
   public
-  def encode(data)
-    @on_event.call(data.to_hash.to_edn)
+  def encode(event)
+    # use normalize = true to make sure returned Hash is pure Ruby for
+    # #to_edn which relies on pure Ruby object recognition
+    data = event.to_hash(normalize = true)
+    # timestamp is serialized as a iso8601 string
+    # merge to avoid modifying data which could have side effects if multiple outputs
+    @on_event.call(data.merge(LogStash::Event::TIMESTAMP => event.timestamp.to_iso8601).to_edn)
   end
 
 end

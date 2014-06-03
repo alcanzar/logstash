@@ -37,8 +37,12 @@ class LogStash::Codecs::Msgpack < LogStash::Codecs::Base
 
   public
   def encode(event)
-    event["@timestamp"] = event["@timestamp"].to_f
-    @on_event.call event.to_hash.to_msgpack
+    # use normalize = true to make sure returned Hash is pure Ruby for
+    # MessagePack#pack which relies on pure Ruby object recognition
+    data = event.to_hash(normalize = true)
+    # timestamp is serialized as a iso8601 string
+    # merge to avoid modifying data which could have side effects if multiple outputs
+    @on_event.call(MessagePack.pack(data.merge(LogStash::Event::TIMESTAMP => event.timestamp.to_iso8601)))
   end # def encode
 
 end # class LogStash::Codecs::Msgpack

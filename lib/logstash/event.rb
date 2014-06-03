@@ -38,20 +38,17 @@ class LogStash::Event
   VERSION_ONE = "1"
 
   public
-  def initialize(data={})
+  def initialize(data = {})
     @cancelled = false
-
     @data = data
     @accessors = LogStash::Util::Accessors.new(data)
+    @data[VERSION] ||= VERSION_ONE
 
-    data[VERSION] = VERSION_ONE if !@data.include?(VERSION)
-    if data.include?(TIMESTAMP)
-      t = data[TIMESTAMP]
-      if t.is_a?(String)
-        data[TIMESTAMP] = LogStash::Timestamp.parse_iso8601(t)
-      end
+    # TODO(colin) what if @data[TIMESTAMP] is not a string?
+    if t = @data[TIMESTAMP]
+      @data[TIMESTAMP] = LogStash::Timestamp.parse_iso8601(t) if t.is_a?(String)
     else
-      data[TIMESTAMP] = LogStash::Timestamp.now
+      @data[TIMESTAMP] = LogStash::Timestamp.now
     end
   end # def initialize
 
@@ -136,8 +133,14 @@ class LogStash::Event
     LogStash::Json.dump(@data)
   end # def to_json
 
-  def to_hash
-    return @data
+  public
+  # return event data hash
+  # @params [Boolean] normalize when true the Hash object is garanteed a real,
+  #   genuine Hash class and not any Java Java.Util.LinkedHashMap class which
+  #   can happen if original event came from JrJackson :raw json deserialization
+  # @return [Hash] event data hash. can be a Java.Util.LinkedHashMap if normalize is false
+  def to_hash(normalize = false)
+    normalize ? LogStash::Json.deep_normalize(@data) : @data
   end # def to_hash
 
   public
