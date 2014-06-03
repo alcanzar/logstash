@@ -186,9 +186,9 @@ class LogStash::Codecs::Multiline < LogStash::Codecs::Base
   end
 
   public
-  def encode(data)
+  def encode(event)
     # Nothing to do.
-    @on_event.call(data)
+    @on_event.call(event)
   end # def encode
 
 end # class LogStash::Codecs::Plain

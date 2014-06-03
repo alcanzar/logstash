@@ -46,12 +46,12 @@ class LogStash::Codecs::OldLogStashJSON < LogStash::Codecs::Base
       # TODO: might be better to V1_TO_V0 = V0_TO_V1.invert during
       # initialization than V0_TO_V1.has_value? within loop
       next if field == "@version" or V0_TO_V1.has_value?(field)
-      h["@fields"] = {} if h["@fields"].nil?
+      h["@fields"] ||= {}
       h["@fields"][field] = val
     end
 
     # Tack on a \n because JSON outputs 1.1.x had them.
-    @on_event.call("#{LogStash::Json.dump(h)}\n")
+    @on_event.call(LogStash::Json.dump(h) + NL)
   end # def encode
 
 end # class LogStash::Codecs::OldLogStashJSON

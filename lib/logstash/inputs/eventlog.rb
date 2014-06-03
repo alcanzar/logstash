@@ -123,7 +123,7 @@ class LogStash::Inputs::EventLog < LogStash::Inputs::Base
       result.concat("0000")
     end
 
-    return LogStash::Timestamp.new(DateTime.strptime(result, "%Y%m%dT%H%M%S%z").iso8601)
+    return LogStash::Timestamp.new(DateTime.strptime(result, "%Y%m%dT%H%M%S%z").to_time)
   end
 end # class LogStash::Inputs::EventLog
 

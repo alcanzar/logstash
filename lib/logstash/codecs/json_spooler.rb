@@ -21,8 +21,8 @@ class LogStash::Codecs::JsonSpooler < LogStash::Codecs::Spool
   end # def decode
 
   public
-  def encode(data)
-    super(data)
+  def encode(event)
+    super(event)
   end # def encode
 
 end # class LogStash::Codecs::Json
