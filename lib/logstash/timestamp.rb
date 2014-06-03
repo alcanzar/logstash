@@ -10,14 +10,15 @@ module LogStash
   class Timestamp
     extend Forwardable
 
-    def_delegators :@time, :tv_usec, :usec, :year, :iso8601, :to_i, :tv_sec, :to_f, :to_s, :to_edn
+    def_delegators :@time, :tv_usec, :usec, :year, :iso8601, :to_i, :tv_sec, :to_f, :to_edn
 
     attr_reader :time
 
     ISO8601_STRFTIME = "%04d-%02d-%02dT%02d:%02d:%02d.%06d%+03d:00".freeze
+    ISO8601_PRECISION = 3
 
-    def initialize(time)
-      @time = time.nil? ? Time.new.utc : time
+    def initialize(time = Time.new)
+      @time = time.utc
     end
 
     def self.at(*args)
@@ -29,7 +30,7 @@ module LogStash
     end
 
     def self.now
-      Timestamp.new(::Time.now.utc)
+      Timestamp.new(::Time.now)
     end
 
     if LogStash::Environment.jruby?
@@ -38,14 +39,14 @@ module LogStash
 
       def self.parse_iso8601(t)
         millis = JODA_ISO8601_PARSER.parseMillis(t)
-        at(millis / 1000, (millis % 1000) * 1000)
+        LogStash::Timestamp.at(millis / 1000, (millis % 1000) * 1000)
       end
 
     else
 
       def self.parse_iso8601(t)
         # warning, ruby's Time.parse is *really* terrible and slow.
-        t.is_a?(String) ? LogStash::Timestamp.parse(t).gmtime : nil
+        t.is_a?(String) ? LogStash::Timestamp.parse(t) : nil
       end
     end
 
@@ -56,9 +57,14 @@ module LogStash
     alias_method :gmtime, :utc
 
     def to_json
-      LogStash::Json.dump(@time.iso8601(3))
+      LogStash::Json.dump(@time.iso8601(ISO8601_PRECISION))
     end
     alias_method :inspect, :to_json
+
+    def to_iso8601
+      @time.iso8601(ISO8601_PRECISION)
+    end
+    alias_method :to_s, :to_iso8601
 
   end
 end
