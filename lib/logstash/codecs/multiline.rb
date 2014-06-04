@@ -166,7 +166,7 @@ class LogStash::Codecs::Multiline < LogStash::Codecs::Base
 
   def flush(&block)
     if @buffer.any?
-      event = LogStash::Event.new("@timestamp" => @time, "message" => @buffer.join("\n"))
+      event = LogStash::Event.new(LogStash::Event::TIMESTAMP => @time, "message" => @buffer.join(NL))
       # Tag multiline events
       event.tag @multiline_tag if @multiline_tag && @buffer.size > 1
 

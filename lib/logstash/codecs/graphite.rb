@@ -52,7 +52,7 @@ class LogStash::Codecs::Graphite < LogStash::Codecs::Base
   def decode(data)
     @lines.decode(data) do |event|
       name, value, time = event["message"].split(" ")
-      yield LogStash::Event.new(name => value.to_f, "@timestamp" => LogStash::Timestamp.at(time.to_i).gmtime)
+      yield LogStash::Event.new(name => value.to_f, LogStash::Event::TIMESTAMP => LogStash::Timestamp.at(time.to_i))
     end # @lines.decode
   end # def decode
 
@@ -93,7 +93,7 @@ class LogStash::Codecs::Graphite < LogStash::Codecs::Base
     if messages.empty?
       @logger.debug("Message is empty, not emiting anything.", :messages => messages)
     else
-      message = messages.join("\n") + "\n"
+      message = messages.join(NL) + NL
       @logger.debug("Emiting carbon messages", :messages => messages)
 
       @on_event.call(message)

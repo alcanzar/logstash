@@ -47,8 +47,6 @@ class LogStash::Filters::Json < LogStash::Filters::Base
   # NOTE: if the `target` field already exists, it will be overwritten!
   config :target, :validate => :string
 
-  TIMESTAMP = "@timestamp"
-
   public
   def register
     # Nothing to do here
@@ -84,11 +82,11 @@ class LogStash::Filters::Json < LogStash::Filters::Base
 
       # If no target, we target the root of the event object. This can allow
       # you to overwrite @timestamp. If so, let's parse it as a timestamp!
-      if !@target && event[TIMESTAMP].is_a?(String)
+      if !@target && event.timestamp.is_a?(String)
         # This is a hack to help folks who are mucking with @timestamp during
         # their json filter. You aren't supposed to do anything with
         # "@timestamp" outside of the date filter, but nobody listens... ;)
-        event[TIMESTAMP] = LogStash::Timestamp.parse(event[TIMESTAMP]).utc
+        event.timestamp = LogStash::Timestamp.parse(event.timestamp)
       end
 
       filter_matched(event)

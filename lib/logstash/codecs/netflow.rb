@@ -91,7 +91,7 @@ class LogStash::Codecs::Netflow < LogStash::Codecs::Base
         #
         # The flowset header gives us the UTC epoch seconds along with
         # residual nanoseconds so we can set @timestamp to that easily
-        event["@timestamp"] = LogStash::Timestamp.at(flowset.unix_sec, flowset.unix_nsec / 1000).utc
+        event.timestamp = LogStash::Timestamp.at(flowset.unix_sec, flowset.unix_nsec / 1000)
         event[@target] = {}
 
         # Copy some of the pertinent fields in the header to the event
@@ -191,7 +191,7 @@ class LogStash::Codecs::Netflow < LogStash::Codecs::Base
 
           records.each do |r|
             event = LogStash::Event.new(
-              "@timestamp" => LogStash::Timestamp.at(flowset.unix_sec).utc,
+              LogStash::Event::TIMESTAMP => LogStash::Timestamp.at(flowset.unix_sec),
               @target => {}
             )
 

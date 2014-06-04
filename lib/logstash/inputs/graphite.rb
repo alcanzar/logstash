@@ -32,7 +32,7 @@ class LogStash::Inputs::Graphite < LogStash::Inputs::Tcp
     event[name] = value.to_f
 
     if time != "N"
-      event["@timestamp"] = LogStash::Timestamp.at(time.to_i).gmtime
+      event.timestamp = LogStash::Timestamp.at(time.to_i)
     end
 
     @queue << event

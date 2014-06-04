@@ -67,12 +67,11 @@ class LogStash::Inputs::Twitter < LogStash::Inputs::Base
     @client.filter(:track => @keywords.join(",")) do |tweet|
       @logger.info? && @logger.info("Got tweet", :user => tweet.user.screen_name, :text => tweet.text)
       if @full_tweet
-        event = LogStash::Event.new(
-          tweet.to_hash.merge("@timestamp" => LogStash::Timestamp.new(tweet.created_at).gmtime)
-        )
+        event = LogStash::Event.new(tweet.to_hash)
+        event.timestamp = LogStash::Timestamp.new(tweet.created_at)
       else
         event = LogStash::Event.new(
-          "@timestamp" => LogStash::Timestamp.new(tweet.created_at).gmtime,
+          LogStash::Event::TIMESTAMP => LogStash::Timestamp.new(tweet.created_at),
           "message" => tweet.full_text,
           "user" => tweet.user.screen_name,
           "client" => tweet.source,

@@ -61,7 +61,7 @@ class LogStash::Inputs::EventLog < LogStash::Inputs::Base
           "host" => @hostname,
           "path" => @logfile,
           "type" => @type,
-          "@timestamp" => timestamp
+          LogStash::Event::TIMESTAMP => timestamp
         )
 
         %w{Category CategoryString ComputerName EventCode EventIdentifier

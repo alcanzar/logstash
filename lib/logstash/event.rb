@@ -44,11 +44,15 @@ class LogStash::Event
     @accessors = LogStash::Util::Accessors.new(data)
     @data[VERSION] ||= VERSION_ONE
 
-    # TODO(colin) what if @data[TIMESTAMP] is not a string?
-    if t = @data[TIMESTAMP]
-      @data[TIMESTAMP] = LogStash::Timestamp.parse_iso8601(t) if t.is_a?(String)
+    @data[TIMESTAMP] = case (val = @data[TIMESTAMP])
+    when String
+      LogStash::Timestamp.parse_iso8601(val)
+    when LogStash::Timestamp
+      val
+    when Time
+      LogStash::Timestamp.new(val)
     else
-      @data[TIMESTAMP] = LogStash::Timestamp.now
+      LogStash::Timestamp.now
     end
   end # def initialize
 
@@ -86,7 +90,7 @@ class LogStash::Event
   else
     public
     def to_s
-      return self.sprintf("#{self["@timestamp"].iso8601} %{host} %{message}")
+      return self.sprintf("#{timestamp.to_iso8601} %{host} %{message}")
     end # def to_s
   end
 
@@ -210,9 +214,9 @@ class LogStash::Event
 
       if key == "+%s"
         # Got %{+%s}, support for unix epoch time
-        next @data["@timestamp"].to_i
+        next @data[TIMESTAMP].to_i
       elsif key[0,1] == "+"
-        t = @data["@timestamp"]
+        t = @data[TIMESTAMP]
         formatter = org.joda.time.format.DateTimeFormat.forPattern(key[1 .. -1])\
           .withZone(org.joda.time.DateTimeZone::UTC)
         #next org.joda.time.Instant.new(t.tv_sec * 1000 + t.tv_usec / 1000).toDateTime.toString(formatter)
