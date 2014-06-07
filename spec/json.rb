@@ -1,23 +1,9 @@
 # encoding: utf-8
 require "logstash/json"
 require "logstash/environment"
+require "logstash/util"
 
 describe LogStash::Json do
-
-  def deep_cast(o)
-    return o unless LogStash::Environment.jruby?
-
-    # usually #to_a and #to_hash are sufficient to cast to the
-    # Ruby class but these are shallow casts.
-    case o
-    when Java::JavaUtil::LinkedHashMap
-      o.inject({}){|r, (k, v)| r[k] = deep_cast(v); r}
-    when Java::JavaUtil::ArrayList
-      o.map{|item| deep_cast(item)}
-    else
-      o
-    end
-  end
 
   let(:hash)   {{"a" => 1}}
   let(:json_hash)   {"{\"a\":1}"}
@@ -48,14 +34,14 @@ describe LogStash::Json do
     ### JRuby specific
 
     context "jruby deserialize" do
-      it "should define load" do
+      it "should respond to load and deserialize object" do
         expect(JrJackson::Json).to receive(:load).with(json_hash, {:raw=>true}).and_call_original
         expect(LogStash::Json.load(json_hash)).to eql(hash)
       end
     end
 
     context "jruby serialize" do
-      it "should define dump" do
+      it "should respond to dump and serialize object" do
         expect(JrJackson::Json).to receive(:dump).with(string).and_call_original
         expect(LogStash::Json.dump(string)).to eql(json_string)
       end
@@ -74,12 +60,12 @@ describe LogStash::Json do
 
     ### MRI specific
 
-    it "should define load on mri" do
+    it "should respond to load and deserialize object on mri" do
       expect(Oj).to receive(:load).with(json).and_call_original
       expect(LogStash::Json.load(json)).to eql(hash)
     end
 
-    it "should define dump on mri" do
+    it "should respond to dump and serialize object on mri" do
       expect(Oj).to receive(:dump).with(hash, anything).and_call_original
       expect(LogStash::Json.dump(hash)).to eql(json)
     end
@@ -87,16 +73,16 @@ describe LogStash::Json do
 
   ### non specific
 
-  it "should correctly load" do
+  it "should correctly deserialize" do
     multi.each do |test|
       # because JrJackson in :raw mode uses Java::JavaUtil::LinkedHashMap and
       # Java::JavaUtil::ArrayList, we must cast to compare.
       # other than that, they quack like their Ruby equivalent
-      expect(deep_cast(LogStash::Json.load(test[:json]))).to eql(test[:ruby])
+      expect(LogStash::Util.normalize(LogStash::Json.load(test[:json]))).to eql(test[:ruby])
     end
   end
 
-  it "should correctly dump" do
+  it "should correctly serialize" do
     multi.each do |test|
       expect(LogStash::Json.dump(test[:ruby])).to eql(test[:json])
     end

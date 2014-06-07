@@ -43,17 +43,7 @@ class LogStash::Event
     @data = data
     @accessors = LogStash::Util::Accessors.new(data)
     @data[VERSION] ||= VERSION_ONE
-
-    @data[TIMESTAMP] = case (val = @data[TIMESTAMP])
-    when String
-      LogStash::Timestamp.parse_iso8601(val)
-    when LogStash::Timestamp
-      val
-    when Time
-      LogStash::Timestamp.new(val)
-    else
-      LogStash::Timestamp.now
-    end
+    @data[TIMESTAMP] = LogStash::Timestamp.import(@data[TIMESTAMP]) || LogStash::Timestamp.now
   end # def initialize
 
   public
@@ -120,11 +110,11 @@ class LogStash::Event
   public
   # keep []= implementation in sync with spec/test_utils.rb monkey patch
   # which redefines []= but using @accessors.strict_set
-  def []=(str, value)
-    if str == TIMESTAMP && !value.is_a?(LogStash::Timestamp)
+  def []=(field, value)
+    if field == TIMESTAMP && !value.is_a?(LogStash::Timestamp)
       raise TypeError, "The field '@timestamp' must be a (LogStash::Timestamp, not a #{value.class} (#{value})"
     end
-    @accessors.set(str, value)
+    @accessors.set(field, value)
   end # def []=
 
   public
@@ -138,13 +128,8 @@ class LogStash::Event
   end # def to_json
 
   public
-  # return event data hash
-  # @params [Boolean] normalize when true the Hash object is garanteed a real,
-  #   genuine Hash class and not any Java Java.Util.LinkedHashMap class which
-  #   can happen if original event came from JrJackson :raw json deserialization
-  # @return [Hash] event data hash. can be a Java.Util.LinkedHashMap if normalize is false
-  def to_hash(normalize = false)
-    normalize ? LogStash::Json.deep_normalize(@data) : @data
+  def to_hash
+    @data
   end # def to_hash
 
   public

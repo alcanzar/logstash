@@ -60,6 +60,8 @@ class LogStash::Filters::Json < LogStash::Filters::Base
 
     return unless event.include?(@source)
 
+    # TODO(colin) this field merging stuff below should be handled in Event.
+
     source = event[@source]
     if @target.nil?
       # Default is to write to the root of the event.
@@ -81,12 +83,10 @@ class LogStash::Filters::Json < LogStash::Filters::Base
       dest.merge!(LogStash::Json.load(source))
 
       # If no target, we target the root of the event object. This can allow
-      # you to overwrite @timestamp. If so, let's parse it as a timestamp!
+      # you to overwrite @timestamp and this will typically happen for json
+      # LogStash Event deserialized here.
       if !@target && event.timestamp.is_a?(String)
-        # This is a hack to help folks who are mucking with @timestamp during
-        # their json filter. You aren't supposed to do anything with
-        # "@timestamp" outside of the date filter, but nobody listens... ;)
-        event.timestamp = LogStash::Timestamp.parse(event.timestamp)
+        event.timestamp = LogStash::Timestamp.parse_iso8601(event.timestamp)
       end
 
       filter_matched(event)

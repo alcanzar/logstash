@@ -6,6 +6,7 @@ require "date"
 require "time"
 
 module LogStash
+  class TimestampParserError < StandardError; end
 
   class Timestamp
     extend Forwardable
@@ -33,6 +34,23 @@ module LogStash
       Timestamp.new(::Time.now)
     end
 
+    # import tries different strategies based on the time object class to convert into a Timestamp.
+    # @param [String, Time, Timestamp] time the time object to try import
+    # @return [Timestamp, nil] Timestamp will be returned if successful otherwise nil
+    # @raise [TimestampParserError] on String with invalid format
+    def self.import(time)
+      case time
+      when String
+        LogStash::Timestamp.parse_iso8601(time)
+      when LogStash::Timestamp
+        time
+      when Time
+        LogStash::Timestamp.new(time)
+      else
+        nil
+      end
+    end
+
     if LogStash::Environment.jruby?
       JODA_ISO8601_PARSER = org.joda.time.format.ISODateTimeFormat.dateTimeParser
       UTC = org.joda.time.DateTimeZone.forID("UTC")
@@ -40,13 +58,17 @@ module LogStash
       def self.parse_iso8601(t)
         millis = JODA_ISO8601_PARSER.parseMillis(t)
         LogStash::Timestamp.at(millis / 1000, (millis % 1000) * 1000)
+      rescue => e
+        raise(TimestampParserError, "invalid timestamp string #{t.inspect}, error=#{e.inspect}")
       end
 
     else
 
       def self.parse_iso8601(t)
         # warning, ruby's Time.parse is *really* terrible and slow.
-        t.is_a?(String) ? LogStash::Timestamp.parse(t) : nil
+        ::Time.parse(t)
+      rescue => e
+        raise(TimestampParserError, "invalid timestamp string #{t.inspect}, error=#{e.inspect}")
       end
     end
 

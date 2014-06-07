@@ -1,5 +1,6 @@
 require "logstash/codecs/base"
 require "logstash/codecs/line"
+require "logstash/util"
 
 class LogStash::Codecs::EDNLines < LogStash::Codecs::Base
   config_name "edn_lines"
@@ -30,9 +31,9 @@ class LogStash::Codecs::EDNLines < LogStash::Codecs::Base
 
   public
   def encode(event)
-    # use normalize = true to make sure returned Hash is pure Ruby for
+    # use normalize to make sure returned Hash is pure Ruby for
     # #to_edn which relies on pure Ruby object recognition
-    data = event.to_hash(normalize = true)
+    data = LogStash::Util.normalize(event.to_hash)
     # timestamp is serialized as a iso8601 string
     # merge to avoid modifying data which could have side effects if multiple outputs
     @on_event.call(data.merge(LogStash::Event::TIMESTAMP => event.timestamp.to_iso8601).to_edn + NL)

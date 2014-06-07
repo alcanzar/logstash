@@ -49,20 +49,5 @@ module LogStash
     alias_method :load, "#{prefix}_load".to_sym
     alias_method :dump, "#{prefix}_dump".to_sym
 
-    # recursively convert any java LinkedHashMap and ArrayList to pure Ruby.
-    # will no recurse into pure Ruby objects. Pure Ruby object should never
-    # contain LinkedHashMap and ArrayList since these are only created at
-    # initial deserialization, anything after (deeper) will be pure Ruby.
-    def deep_normalize(o)
-      case o
-      when Java::JavaUtil::LinkedHashMap
-        o.inject({}){|r, (k, v)| r[k] = deep_normalize(v); r}
-      when Java::JavaUtil::ArrayList
-        o.map{|i| deep_normalize(i)}
-      else
-        o
-      end
-    end
-
   end
 end
