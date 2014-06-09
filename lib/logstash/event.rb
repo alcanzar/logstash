@@ -43,7 +43,7 @@ class LogStash::Event
     @data = data
     @accessors = LogStash::Util::Accessors.new(data)
     @data[VERSION] ||= VERSION_ONE
-    @data[TIMESTAMP] = LogStash::Timestamp.import(@data[TIMESTAMP]) || LogStash::Timestamp.now
+    @data[TIMESTAMP] = LogStash::Timestamp.coerce(@data[TIMESTAMP]) || LogStash::Timestamp.now
   end # def initialize
 
   public
