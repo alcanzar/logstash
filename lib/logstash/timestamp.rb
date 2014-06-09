@@ -34,11 +34,11 @@ module LogStash
       Timestamp.new(::Time.now)
     end
 
-    # import tries different strategies based on the time object class to convert into a Timestamp.
-    # @param [String, Time, Timestamp] time the time object to try import
+    # coerce tries different strategies based on the time object class to convert into a Timestamp.
+    # @param [String, Time, Timestamp] time the time object to try coerce
     # @return [Timestamp, nil] Timestamp will be returned if successful otherwise nil
     # @raise [TimestampParserError] on String with invalid format
-    def self.import(time)
+    def self.coerce(time)
       case time
       when String
         LogStash::Timestamp.parse_iso8601(time)

@@ -8,28 +8,28 @@ describe LogStash::Timestamp do
     expect(LogStash::Timestamp.parse_iso8601(ts.to_iso8601).to_i).to eq(t.to_i)
   end
 
-  it "should import iso8601 string" do
+  it "should coerce iso8601 string" do
     t = Time.now
     ts = LogStash::Timestamp.new(t)
-    expect(LogStash::Timestamp.import(ts.to_iso8601).to_i).to eq(t.to_i)
+    expect(LogStash::Timestamp.coerce(ts.to_iso8601).to_i).to eq(t.to_i)
   end
 
-  it "should import Time" do
+  it "should coerce Time" do
     t = Time.now
-    expect(LogStash::Timestamp.import(t).to_i).to eq(t.to_i)
+    expect(LogStash::Timestamp.coerce(t).to_i).to eq(t.to_i)
   end
 
-  it "should import Timestamp" do
+  it "should coerce Timestamp" do
     t = LogStash::Timestamp.now
-    expect(LogStash::Timestamp.import(t).to_i).to eq(t.to_i)
+    expect(LogStash::Timestamp.coerce(t).to_i).to eq(t.to_i)
   end
 
-  it "should raise on invalid string import" do
-    expect{LogStash::Timestamp.import("foobar")}.to raise_error LogStash::TimestampParserError
+  it "should raise on invalid string coerce" do
+    expect{LogStash::Timestamp.coerce("foobar")}.to raise_error LogStash::TimestampParserError
   end
 
-  it "should return nil on invalid object import" do
-    expect(LogStash::Timestamp.import(:foobar)).to be_nil
+  it "should return nil on invalid object coerce" do
+    expect(LogStash::Timestamp.coerce(:foobar)).to be_nil
   end
 
 end
