@@ -99,12 +99,7 @@ class LogStash::Event
   # field-related access
   public
   def [](fieldref)
-    if fieldref[0,1] == CHAR_PLUS
-      # nothing?
-    else
-      # return LogStash::Util::FieldReference.exec(fieldref, @data)
-      @accessors.get(fieldref)
-    end
+    @accessors.get(fieldref)
   end # def []
 
   public
