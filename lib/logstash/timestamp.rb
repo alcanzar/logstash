@@ -66,7 +66,7 @@ module LogStash
 
       def self.parse_iso8601(t)
         # warning, ruby's Time.parse is *really* terrible and slow.
-        ::Time.parse(t)
+        LogStash::Timestamp.new(::Time.parse(t))
       rescue => e
         raise(TimestampParserError, "invalid timestamp string #{t.inspect}, error=#{e.inspect}")
       end
