@@ -98,23 +98,23 @@ class LogStash::Event
 
   # field-related access
   public
-  def [](str)
-    if str[0,1] == CHAR_PLUS
+  def [](fieldref)
+    if fieldref[0,1] == CHAR_PLUS
       # nothing?
     else
-      # return LogStash::Util::FieldReference.exec(str, @data)
-      @accessors.get(str)
+      # return LogStash::Util::FieldReference.exec(fieldref, @data)
+      @accessors.get(fieldref)
     end
   end # def []
 
   public
   # keep []= implementation in sync with spec/test_utils.rb monkey patch
   # which redefines []= but using @accessors.strict_set
-  def []=(field, value)
-    if field == TIMESTAMP && !value.is_a?(LogStash::Timestamp)
+  def []=(fieldref, value)
+    if fieldref == TIMESTAMP && !value.is_a?(LogStash::Timestamp)
       raise TypeError, "The field '@timestamp' must be a (LogStash::Timestamp, not a #{value.class} (#{value})"
     end
-    @accessors.set(field, value)
+    @accessors.set(fieldref, value)
   end # def []=
 
   public
@@ -163,11 +163,8 @@ class LogStash::Event
   # Remove a field or field reference. Returns the value of that field when
   # deleted
   public
-  def remove(str)
-    # return LogStash::Util::FieldReference.exec(str, @data) do |obj, key|
-    #   next obj.delete(key)
-    # end
-    @accessors.del(str)
+  def remove(fieldref)
+    @accessors.del(fieldref)
   end # def remove
 
   # sprintf. This could use a better method name.
