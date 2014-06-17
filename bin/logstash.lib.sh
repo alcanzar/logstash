@@ -43,17 +43,18 @@ setup_java() {
 
 setup_drip() {
   if [ -z $DRIP_JAVACMD ] ; then
-    JAVACMD=$(which drip)
-    if [ -z "$JAVACMD" ] ; then
-      echo "Could not find drip binary. Please install drip in your PATH"
-      exit 1
-    fi
+    JAVACMD="drip"
   fi
+
+  # resolve full path to the drip command.
+  if [ ! -f "$JAVACMD" ] ; then
+    JAVACMD=$(which $JAVACMD 2>/dev/null)
+  fi
+
   if [ ! -x "$JAVACMD" ] ; then
     echo "Could not find executable drip binary. Please install drip in your PATH"
     exit 1
   fi
-
 
   # faster JRuby startup options https://github.com/jruby/jruby/wiki/Improving-startup-time
   # since we are using drip to speed up, we may as well throw these in also
